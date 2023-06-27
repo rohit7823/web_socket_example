@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_example/web_socket_client.dart';
 
 void main() {
   runApp(ChatApp());
 }
 
 class ChatApp extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -28,47 +28,33 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textEditingController = TextEditingController();
-  late final WebSocketChannel channel;
+  late final WebSocketClient client = WebSocketClient.getInstance();
   List<String> _messages = [];
-
-  Future<bool> checkStatus() async {
-    var isCompleted = false;
-
-    await channel.ready;
-    isCompleted = true;
-
-    return isCompleted;
-  }
 
   @override
   void initState() {
-    super.initState();
-    try {
-      channel = IOWebSocketChannel.connect(
-          Uri.parse('ws://192.168.29.235:3000/TEST'));
-    } on WebSocketChannelException catch (ex) {
-      debugPrint("exception ${ex.message}");
-    } on Exception catch (ex) {
-      debugPrint("exception $ex");
-    }
-
-    channel.stream.listen((message) {
+    WebSocketClient.onData = (message) {
       setState(() {
         _messages.add(message);
       });
-    }, onError: (data) {}, onDone: () {}, cancelOnError: false);
+    };
+
+    super.initState();
+    client.connectToSocket();
+    client.isSocketConnected;
   }
 
   void _sendMessage(String message) {
     if (message.isNotEmpty) {
-      channel.sink.add({"fromClient": message}.toString());
+      debugPrint("trying $message");
+      client.subscribe(message);
     }
     _textEditingController.clear();
   }
 
   @override
   void dispose() {
-    channel.sink.close();
+    client.disconnect();
     super.dispose();
   }
 
