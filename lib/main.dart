@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:web_socket_example/message.dart';
+import 'package:web_socket_example/socket_entry.dart';
 import 'package:web_socket_example/web_socket_client.dart';
+import 'package:web_socket_example/ws_event.dart';
 
 void main() {
   runApp(ChatApp());
 }
 
 class ChatApp extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -28,26 +30,29 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textEditingController = TextEditingController();
-  late final WebSocketClient client = WebSocketClient.getInstance();
+  late final WebSocketClient client = WebSocketClient.getInstance("samaresh");
   List<String> _messages = [];
 
   @override
   void initState() {
-    WebSocketClient.onData = (message) {
-      setState(() {
-        _messages.add(message);
-      });
+    WsEvent.addMessage = (data) {
+      if (data != null) {
+        setState(() {
+          _messages.add(data.msg);
+        });
+        //WsEvent.addMessage = null;
+      }
     };
 
     super.initState();
     client.connectToSocket();
-    client.isSocketConnected;
   }
 
   void _sendMessage(String message) {
     if (message.isNotEmpty) {
-      debugPrint("trying $message");
-      client.subscribe(message);
+      client.subscribe(SocketEntry(
+          event: SocketEvent.add,
+          data: Message(msg: message, recipient: "TEST")));
     }
     _textEditingController.clear();
   }
